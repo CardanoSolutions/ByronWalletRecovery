@@ -1,0 +1,23 @@
+{
+  "name": "inspect-keystore",
+  "version": "1.0.0",
+  "description": "A tool for exploring old Cardano 'secret.key' files. ",
+  "main": "index.js",
+  "scripts": {
+    "inspect-keystore": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/CardanoSolutions/ByronWalletRecovery.git"
+  },
+  "author": "",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/CardanoSolutions/ByronWalletRecovery/issues"
+  },
+  "homepage": "https://github.com/CardanoSolutions/ByronWalletRecovery#readme",
+  "dependencies": {
+    "bech32": "^2.0.0",
+    "cbor": "^8.1.0"
+  }
+}
