@@ -1,0 +1,65 @@
+_config: !include ".stylish-haskell.yaml"
+
+name:                cardano-sl-subset
+version:             0.1.0.0
+license:             Apache-2.0
+author:              "CardanoSolutions"
+copyright:           "2022 CardanoSolutions"
+description:         A subset of cardano-sl, that compiles, sufficient to play around addresses using the legacy code.
+
+dependencies:
+- base >= 4.7 && < 5
+
+default-extensions: *default-extensions
+
+library:
+  source-dirs: src
+  dependencies:
+  - async
+  - base58-bytestring
+  - base16-bytestring
+  - binary
+  - bytestring
+  - cardano-crypto
+  - cborg
+  - containers
+  - cryptonite
+  - data-default
+  - digest
+  - hashable
+  - tagged
+  - memory
+  - text
+  - time-units
+  - universum
+  - unordered-containers
+  - vector
+
+executables:
+  create-address:
+    main: CreateAddress.hs
+    source-dirs: app
+    ghc-options:
+    - -O2
+    - -threaded
+    - '"-with-rtsopts=-N"'
+    dependencies:
+    - async
+    - base16-bytestring
+    - base58-bytestring
+    - binary
+    - bytestring
+    - cardano-crypto
+    - cardano-sl-subset
+    - cborg
+    - containers
+    - cryptonite
+    - data-default
+    - hashable
+    - memory
+    - tagged
+    - text
+    - time-units
+    - universum
+    - unordered-containers
+    - vector

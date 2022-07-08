@@ -1,0 +1,160 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           cardano-sl-subset
+version:        0.1.0.0
+description:    A subset of cardano-sl, that compiles, sufficient to play around addresses using the legacy code.
+author:         CardanoSolutions
+maintainer:     CardanoSolutions
+copyright:      2022 CardanoSolutions
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Pos.Binary.Class
+      Pos.Binary.Class.Core
+      Pos.Binary.Class.Primitive
+      Pos.Binary.Core.Address
+      Pos.Binary.Crypto
+      Pos.Core.Address
+      Pos.Core.Types
+      Pos.Crypto.Hashing
+      Pos.Crypto.HD
+      Pos.Data.Attributes
+  other-modules:
+      Paths_cardano_sl_subset
+  hs-source-dirs:
+      src
+  default-extensions:
+      BangPatterns
+      BinaryLiterals
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      NumericUnderscores
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternGuards
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeSynonymInstances
+      ViewPatterns
+  build-depends:
+      async
+    , base >=4.7 && <5
+    , base16-bytestring
+    , base58-bytestring
+    , binary
+    , bytestring
+    , cardano-crypto
+    , cborg
+    , containers
+    , cryptonite
+    , data-default
+    , digest
+    , hashable
+    , memory
+    , tagged
+    , text
+    , time-units
+    , universum
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
+
+executable create-address
+  main-is: CreateAddress.hs
+  other-modules:
+      Paths_cardano_sl_subset
+  hs-source-dirs:
+      app
+  default-extensions:
+      BangPatterns
+      BinaryLiterals
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      NumericUnderscores
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternGuards
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeSynonymInstances
+      ViewPatterns
+  ghc-options: -O2 -threaded "-with-rtsopts=-N"
+  build-depends:
+      async
+    , base >=4.7 && <5
+    , base16-bytestring
+    , base58-bytestring
+    , binary
+    , bytestring
+    , cardano-crypto
+    , cardano-sl-subset
+    , cborg
+    , containers
+    , cryptonite
+    , data-default
+    , hashable
+    , memory
+    , tagged
+    , text
+    , time-units
+    , universum
+    , unordered-containers
+    , vector
+  default-language: Haskell2010

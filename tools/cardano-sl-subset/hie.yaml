@@ -1,0 +1,4 @@
+cradle:
+  stack:
+    - path: .
+      component: "cardano-sl-subset:exe:create-address"
