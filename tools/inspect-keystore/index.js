@@ -17,17 +17,20 @@ const cbor = require('cbor');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { bech32 } = require('bech32');
+const {
+  bech32
+} = require('bech32');
 const cardano = require('cardano-crypto.js')
 
-const [_1, _2, keystorePath, byronAddress] = process.argv;
+
+const [_1, _2, keystorePath, candidatePassword, byronAddress] = process.argv;
 
 const bytes = fs.readFileSync(path.isAbsolute(keystorePath) ?
   keystorePath :
   path.join(__dirname, keystorePath));
 
 decodeKeystore(bytes)
-  .then(validateKeystore)
+  .then((keystore) => validateKeystore(keystore, candidatePassword, byronAddress))
   .then(console.log)
   .catch(console.exception);
 
@@ -143,16 +146,27 @@ function encodeBech32(prefix, bytes) {
   return bech32.encode(prefix, words, MAX_LENGTH);
 }
 
-function validateKeystore(keystore) {
-  const validated = (key) => {
-    const generated = cardano.toPublic(key.xprv)
+async function validateKeystore(keystore,candidatePassword, byronaddress) {
+  const validated =  async (key) => {
+    const hdp = await cardano.xpubToHdPassphrase(Buffer.concat([key.xpub, key.cc]))
+    const addrBuf = cardano.addressToBuffer(byronaddress)
 
+    try {
+      const dp = cardano.getBootstrapAddressDerivationPath(addrBuf, hdp)
+      console.log(`${byronaddress.path} versus. ${dp}`)
+    } catch (e) {
+      console.log(`Address ${byronAddress} does not belong to root public key examined.`)
+    }
+
+    const generated = cardano.toPublic(key.xprv)
     key.hasValidKey = key.isEmptyPassphrase ?
       (Buffer.compare(key.xpub, generated) == 0 ? "true" : "false") :
       "unsure, more verification required"
 
-    return key;
+    return await key;
   }
 
-  return displayInformation(keystore.map(validated))
+  const asyncRes = await Promise.all(keystore.map(validated));
+
+  return displayInformation(asyncRes)
 }
