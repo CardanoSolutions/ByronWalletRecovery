@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Install:
+//
+// npm i cbor bech32 cardano-crypto.js@6.1.1
+//
 // Usage:
 //
 //     ./index.js [FILEPATH]
@@ -8,24 +12,26 @@
 //
 //     ./index.js examples/secret.key
 
+
 const cbor = require('cbor');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { bech32 } = require('bech32');
+const cardano = require('cardano-crypto.js')
 
-const [_1, _2, keystorePath] = process.argv;
+const [_1, _2, keystorePath, byronAddress] = process.argv;
 
-const bytes = fs.readFileSync(path.isAbsolute(keystorePath)
-  ? keystorePath
-  : path.join(__dirname, keystorePath));
+const bytes = fs.readFileSync(path.isAbsolute(keystorePath) ?
+  keystorePath :
+  path.join(__dirname, keystorePath));
 
 decodeKeystore(bytes)
-  .then(displayInformation)
+  .then(validateKeystore)
   .then(console.log)
   .catch(console.exception);
 
-function toEncryptedSecretKey ([encryptedPayload, passphraseHash], source) {
+function toEncryptedSecretKey([encryptedPayload, passphraseHash], source) {
   const isEmptyPassphrase = $isEmptyPassphrase(passphraseHash);
 
   // The payload is a concatenation of the private key, the public key
@@ -58,10 +64,14 @@ function toEncryptedSecretKey ([encryptedPayload, passphraseHash], source) {
 // Thus, is possible to know if a passphrase is an "empty passphrase" by comparing it with
 // a CBOR-serialized empty bytestring (`0x40`). The salt used for encryption is embedded in
 // passphrase.
-function $isEmptyPassphrase (pwd) {
+function $isEmptyPassphrase(pwd) {
   const cborEmptyBytes = Buffer.from('40', 'hex');
   const [logN, r, p, salt, hashA] = pwd.toString('utf8').split('|');
-  const opts = { N: 2 ** Number(logN), r: Number(r), p: Number(p) };
+  const opts = {
+    N: 2 ** Number(logN),
+    r: Number(r),
+    p: Number(p)
+  };
   const hashB = crypto
     .scryptSync(cborEmptyBytes, Buffer.from(salt, 'base64'), 32, opts)
     .toString('base64');
@@ -69,7 +79,7 @@ function $isEmptyPassphrase (pwd) {
 }
 
 // The keystore is "just" a CBOR-encoded 'UserSecret' as detailed below.
-async function decodeKeystore (bytes) {
+async function decodeKeystore(bytes) {
   return cbor.decodeAll(bytes).then((obj) => {
     /**
      * The original 'UserSecret' from cardano-sl looks like this:
@@ -108,12 +118,20 @@ async function decodeKeystore (bytes) {
 }
 
 function displayInformation(keystore) {
-  const display = ({ xprv, xpub, cc, isEmptyPassphrase, source }) => {
+  const display = ({
+    xprv,
+    xpub,
+    cc,
+    isEmptyPassphrase,
+    source,
+    hasValidKey
+  }) => {
     return {
       "encrypted-root-private-key": encodeBech32("root_xsk", Buffer.concat([xprv, cc])),
       "root-public-key": encodeBech32("root_xvk", Buffer.concat([xpub, cc])),
       source,
       "is-empty-passphrase": isEmptyPassphrase,
+      "has-valid-key": hasValidKey
     }
   };
   return JSON.stringify(keystore.map(display), null, 4);
@@ -123,4 +141,18 @@ function encodeBech32(prefix, bytes) {
   const words = bech32.toWords(bytes);
   const MAX_LENGTH = 999; // long-enough, Cardano uses bech32 for long strings.
   return bech32.encode(prefix, words, MAX_LENGTH);
+}
+
+function validateKeystore(keystore) {
+  const validated = (key) => {
+    const generated = cardano.toPublic(key.xprv)
+
+    key.hasValidKey = key.isEmptyPassphrase ?
+      (Buffer.compare(key.xpub, generated) == 0 ? "true" : "false") :
+      "unsure, more verification required"
+
+    return key;
+  }
+
+  return displayInformation(keystore.map(validated))
 }
