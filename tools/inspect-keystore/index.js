@@ -12,16 +12,12 @@
 //
 //     ./index.js examples/secret.key
 
-
 const cbor = require('cbor');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const {
-  bech32
-} = require('bech32');
+const { bech32 } = require('bech32');
 const cardano = require('cardano-crypto.js')
-
 
 const [_1, _2, keystorePath, candidatePassword, byronAddress] = process.argv;
 
@@ -127,14 +123,18 @@ function displayInformation(keystore) {
     cc,
     isEmptyPassphrase,
     source,
-    hasValidKey
+    hasValidKey,
+    address,
+    path
   }) => {
     return {
       "encrypted-root-private-key": encodeBech32("root_xsk", Buffer.concat([xprv, cc])),
       "root-public-key": encodeBech32("root_xvk", Buffer.concat([xpub, cc])),
       source,
       "is-empty-passphrase": isEmptyPassphrase,
-      "has-valid-key": hasValidKey
+      "has-valid-key": hasValidKey,
+      "address": address,
+      "path": path
     }
   };
   return JSON.stringify(keystore.map(display), null, 4);
@@ -146,27 +146,69 @@ function encodeBech32(prefix, bytes) {
   return bech32.encode(prefix, words, MAX_LENGTH);
 }
 
-async function validateKeystore(keystore,candidatePassword, byronaddress) {
-  const validated =  async (key) => {
-    const hdp = await cardano.xpubToHdPassphrase(Buffer.concat([key.xpub, key.cc]))
-    const addrBuf = cardano.addressToBuffer(byronaddress)
+async function validateKeystore(keystore, userPwd, byronaddress) {
+  const validated = async (key) => {
+    /*
+     * Steps for wallet validation:
+     *   0. Check whether the user's provide address belongs to this address.
+     *   1. is the current wallet is base on _usKeys or _usWalletSet?
+     *     a. if _usWallets go to point 3.
+     *   2. Is the wallet has and empty-hash?
+     *     a. if no, try to decrypt the encrypted secret key with the user's provided password.
+     *   3. Can the secret key regenerate it's stored public key?
+     *     a. if no, then try to decrypt the encrypted secret key with the user's provided password.
+     *   4. Created a wallet recovery key secret.key based on the secret key. 
+     */
 
+    // TODO: 0. If the byron address is defined, check whether it belongs to 
+    // the wallet or not.
     try {
-      const dp = cardano.getBootstrapAddressDerivationPath(addrBuf, hdp)
-      console.log(`${byronaddress.path} versus. ${dp}`)
+      /// 1st check. Check whether
+      const hdp = await cardano.xpubToHdPassphrase(Buffer.concat([key.xpub, key.cc]))
+      const addrBuf = await cardano.addressToBuffer(byronaddress)
+      const path = cardano.getBootstrapAddressDerivationPath(addrBuf, hdp)
+      key.address = byronaddress
+      key.path = path
+      // console.log(`${byronaddress} versus. ${dp}`)
     } catch (e) {
-      console.log(`Address ${byronAddress} does not belong to root public key examined.`)
+      //  console.log(`Address ${byronAddress} does not belong to root public key examined. ${e}`)
+      key.address = ""
+      key.path = []
     }
 
-    const generated = cardano.toPublic(key.xprv)
+    // TODO: 1. is it _usWallet or _usWalletSet based wallet?
+
+
+    // TODO: 2. Does the wallet has empty password based `passwordHash`
+
+    // NOTE: 3. Check whether that the stored master public key is the same
+    // with the generated from the store master private key. This ensures that
+    // the master secret is not encrypted.
+    const isDecrypted = checkEncryption(key.xprv, key.xpub)
     key.hasValidKey = key.isEmptyPassphrase ?
-      (Buffer.compare(key.xpub, generated) == 0 ? "true" : "false") :
+      (isDecrypted ? "true" : "false") :
       "unsure, more verification required"
 
-    return await key;
+    // TODO: 3.a. Try to decrypt the encrypted sk with the user's provided password.
+    if (!isDecrypted) {
+      // FIXME: Vacumlabs cardano memory combine seems to be add and additional blake2b_512 stratching.
+      // 
+      const prv = await cardano.cardanoMemoryCombine(key.xprv, userPwd)
+      if (checkEncryption(prv, key.xpub)) {
+        console.log(`The decryption was successfull`)
+      } else {
+        console.log(`The decryption was un-successfull`)
+      }
+    }
+    return key;
   }
 
   const asyncRes = await Promise.all(keystore.map(validated));
 
   return displayInformation(asyncRes)
+}
+
+function checkEncryption(prv, pub) {
+  const genPub = cardano.toPublic(prv)
+  return Buffer.compare(pub, genPub) == 0
 }
