@@ -146,19 +146,22 @@ function encodeBech32(prefix, bytes) {
   return bech32.encode(prefix, words, MAX_LENGTH);
 }
 
+
+/*
+ * Steps for wallet validation:
+ *   0. Check whether the user's provided address, if there is any,  belongs to this Wallet.
+ *   1. Is the current wallet based on `_usKeys` or `_usWalletSet`?
+ *     a. If _usWallets go to point 3.
+ *   2. Is the wallet has and empty-hash?
+ *     a. if no, try to decrypt the encrypted secret key with the user's provided password.
+ *   3. Can the secret key regenerate its stored public key?
+ *     a. if no, then try to decrypt the encrypted secret key with the user's provided password,
+ *     b. as it means that the private key in the master secret is encrypted or corrupted or
+ *     c. the public key is corrupted, etc.
+ *   4. Create a wallet recovery key secret.key based on the secret key. 
+ */
 async function validateKeystore(keystore, userPwd, byronaddress) {
   const validated = async (key) => {
-    /*
-     * Steps for wallet validation:
-     *   0. Check whether the user's provide address belongs to this address.
-     *   1. is the current wallet is base on _usKeys or _usWalletSet?
-     *     a. if _usWallets go to point 3.
-     *   2. Is the wallet has and empty-hash?
-     *     a. if no, try to decrypt the encrypted secret key with the user's provided password.
-     *   3. Can the secret key regenerate it's stored public key?
-     *     a. if no, then try to decrypt the encrypted secret key with the user's provided password.
-     *   4. Created a wallet recovery key secret.key based on the secret key. 
-     */
 
     // TODO: 0. If the byron address is defined, check whether it belongs to 
     // the wallet or not.
