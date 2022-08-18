@@ -52,6 +52,8 @@ async function toEncryptedSecretKey([encryptedPayload, passphraseHash], source, 
 
   const isEmptyPassphrase = isValidPassphrase(passphraseHash, "");
 
+  const canRegenerateHash = !isEmptyPassphrase ? isValidPassphrase(passphraseHash, restoreParams.encryptionPassword) : undefined
+
   // The payload is a concatenation of the private key, the public key
   // and the chain-code:
   //
@@ -70,7 +72,7 @@ async function toEncryptedSecretKey([encryptedPayload, passphraseHash], source, 
     hasValidEncryption,
     decryptedSecret,
     encryptionPassword
-  } = await isEncryptionValid(esk, pk, isEmptyPassphrase, restoreParams)
+  } = await isEncryptionValid(esk, pk, restoreParams)
 
   // TODO: Check an edge case when the stored master public key cannot decrypt the derivation path
   // but the master public key from a decrypted secret key can. It should never happen in normal circumstances.
@@ -103,6 +105,9 @@ async function toEncryptedSecretKey([encryptedPayload, passphraseHash], source, 
     encryptedPayload,
     passphraseHash,
     isEmptyPassphrase,
+    // When it's not empty passhprase we try to regenerate the hash of the stored passwordHash
+    // If it's faling then it means the provided passwrod cannot regenerate the hash in keystore.
+    canRegenerateHash,
     source,
     // Whether the encrypted master secret is decryptable
     // Yes or no.
@@ -193,6 +198,7 @@ function displayInformation(keystore) {
     encryptedPayload,
     passphraseHash,
     isEmptyPassphrase,
+    canRegenerateHash,
     source,
     hasValidEncryption,
     encryptionPassword,
@@ -205,6 +211,7 @@ function displayInformation(keystore) {
       "root-public-key": encodeBech32("root_xvk", xpub),
       source,
       "is-empty-passphrase": isEmptyPassphrase,
+      "can-regenerate-hash": canRegenerateHash,
       "has-valid-encryption": hasValidEncryption,
       // It can either be the user provided or empty if no encryption occured.
       "encryption-password": encryptionPassword,
@@ -231,7 +238,7 @@ function encodeBech32(prefix, bytes) {
 
 // A master private key encryption is valid when the decrypted private key
 // can regenerate the stored root public key.
-async function isEncryptionValid(xprv, pub, isEmptyPassphrase, restoreParams) {
+async function isEncryptionValid(xprv, pub, restoreParams) {
   // NOTE: Check whether that the stored master public key is the same
   // with the generated from the stored master private key.
   // This ensures that the master secret is not encrypted independently whether it

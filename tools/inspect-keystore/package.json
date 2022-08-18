@@ -18,6 +18,7 @@
   "homepage": "https://github.com/CardanoSolutions/ByronWalletRecovery#readme",
   "dependencies": {
     "bech32": "^2.0.0",
+    "cardano-crypto.js": "^6.1.1",
     "cbor": "^8.1.0"
   }
 }
